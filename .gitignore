@@ -15,6 +15,7 @@
 *.so
 *.dylib
 *.dll
+lib/*
 
 # Fortran module files
 *.mod
@@ -57,9 +58,16 @@ bin/
 install/
 git_commit.txt
 version.txt
+gpunetio_verbs_put_bw
+gpunetio_verbs_write_bw
+gpunetio_verbs_write_lat
 
 # local debug for coverity
 .gitlab-ci-4-coverity.yml
 .Makefile*
 .version.mk
 .common.mk
+
+.cache/*
+
+third_party/*

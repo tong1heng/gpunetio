@@ -40,13 +40,13 @@
 
 #include "verbs_common.h"
 
-#define KERNEL_DEBUG_TIMES 0
+#define KERNEL_DEBUG_TIMES 1
 #define ENABLE_DEBUG 0
 
 template <enum doca_gpu_dev_verbs_exec_scope scope>
 __global__ void put_bw(struct doca_gpu_dev_verbs_qp *qp, uint32_t num_iters, uint32_t data_size,
                        uint8_t *src_buf, uint32_t src_buf_mkey, uint8_t *dst_buf,
-                       uint32_t dst_buf_mkey) {
+                       uint32_t dst_buf_mkey, uint32_t *timer) {
     doca_gpu_dev_verbs_ticket_t out_ticket;
     uint32_t lane_idx = doca_gpu_dev_verbs_get_lane_id();
     uint32_t tidx = threadIdx.x + (blockIdx.x * blockDim.x);
@@ -87,7 +87,7 @@ __global__ void put_bw(struct doca_gpu_dev_verbs_qp *qp, uint32_t num_iters, uin
             if (lane_idx == 0) {
                 if (doca_gpu_dev_verbs_poll_cq_at<DOCA_GPUNETIO_VERBS_RESOURCE_SHARING_MODE_GPU>(
                         doca_gpu_dev_verbs_qp_get_cq_sq(qp),
-                        out_ticket + DOCA_GPUNETIO_VERBS_WARP_SIZE - 1) != 0) {
+                        out_ticket + blockDim.x - 1) != 0) {
 #if ENABLE_DEBUG == 1
                     printf("Error CQE!\n");
 #endif
@@ -96,14 +96,16 @@ __global__ void put_bw(struct doca_gpu_dev_verbs_qp *qp, uint32_t num_iters, uin
         }
 #if KERNEL_DEBUG_TIMES == 1
         step3 = doca_gpu_dev_verbs_query_globaltimer();
+        timer[idx] = step2 - step1;
+        timer[idx + num_iters] = step3 - step2;
 #endif
 
         __syncthreads();
 
 #if KERNEL_DEBUG_TIMES == 1
-        if (threadIdx.x == 0)
-            printf("iteration %d src_buf %lx size %d dst_buf %lx put %ld ns, poll %ld ns\n", idx,
-                   src_buf, data_size, dst_buf, step2 - step1, step3 - step2);
+        // if (threadIdx.x == 0)
+        //     printf("iteration %d src_buf %lx size %d dst_buf %lx put %ld ns, poll %ld ns\n", idx,
+        //            src_buf, data_size, dst_buf, step2 - step1, step3 - step2);
 #endif
     }
 }
@@ -125,12 +127,15 @@ doca_error_t gpunetio_verbs_put_bw(cudaStream_t stream, struct doca_gpu_dev_verb
         return DOCA_ERROR_BAD_STATE;
     }
 
+    uint32_t *timer = nullptr;
+    cudaMalloc(&timer, sizeof(uint32_t) * num_iters * 2);
+
     if (scope == DOCA_GPUNETIO_VERBS_EXEC_SCOPE_THREAD)
         put_bw<DOCA_GPUNETIO_VERBS_EXEC_SCOPE_THREAD><<<cuda_blocks, cuda_threads, 0, stream>>>(
-            qp, num_iters, data_size, src_buf, src_buf_mkey, dst_buf, dst_buf_mkey);
+            qp, num_iters, data_size, src_buf, src_buf_mkey, dst_buf, dst_buf_mkey, timer);
     else if (scope == DOCA_GPUNETIO_VERBS_EXEC_SCOPE_WARP)
         put_bw<DOCA_GPUNETIO_VERBS_EXEC_SCOPE_WARP><<<cuda_blocks, cuda_threads, 0, stream>>>(
-            qp, num_iters, data_size, src_buf, src_buf_mkey, dst_buf, dst_buf_mkey);
+            qp, num_iters, data_size, src_buf, src_buf_mkey, dst_buf, dst_buf_mkey, timer);
 
     result = cudaGetLastError();
     if (cudaSuccess != result) {
@@ -138,6 +143,22 @@ doca_error_t gpunetio_verbs_put_bw(cudaStream_t stream, struct doca_gpu_dev_verb
                  cudaGetErrorString(result));
         return DOCA_ERROR_BAD_STATE;
     }
+
+#if KERNEL_DEBUG_TIMES == 1
+    uint32_t *host_timer = (uint32_t *)malloc(sizeof(uint32_t) * num_iters * 2);
+    cudaMemcpy(host_timer, timer, sizeof(uint32_t) * num_iters * 2, cudaMemcpyDeviceToHost);
+    // printf("Kernel timer results, data_size = %d:\n", data_size);
+    uint32_t sum_put = 0;
+    uint32_t sum_poll = 0;
+    for (uint32_t i = 0; i < num_iters; i++) {
+        // printf("Iteration %d: put %u ns, poll %u ns\n", i, host_timer[i], host_timer[i + num_iters]);
+        sum_put += host_timer[i];
+        sum_poll += host_timer[i + num_iters];
+    }
+    printf("Average time per iteration for size %d: [put %f us, poll %f us, total %f us]\n", data_size, (float)sum_put / num_iters / 1000, (float)sum_poll / num_iters / 1000, (float)(sum_put + sum_poll) / num_iters / 1000);
+    cudaFree(timer);
+    free(host_timer);
+#endif
 
     return DOCA_SUCCESS;
 }

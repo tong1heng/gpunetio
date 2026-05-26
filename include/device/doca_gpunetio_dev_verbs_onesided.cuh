@@ -118,7 +118,7 @@ __device__ static __forceinline__ void doca_gpu_dev_verbs_put_warp(
 
     if (lane_idx == 0) {
         base_wqe_idx = doca_gpu_dev_verbs_reserve_wq_slots<resource_sharing_mode>(
-            qp, DOCA_GPUNETIO_VERBS_WARP_SIZE, code_opt);
+            qp, blockDim.x, code_opt);
         base_wqe_idx_0 = (uint32_t)base_wqe_idx;
         base_wqe_idx_1 = (uint32_t)(base_wqe_idx >> 32);
     }
@@ -139,7 +139,7 @@ __device__ static __forceinline__ void doca_gpu_dev_verbs_put_warp(
     __syncwarp();
     if (lane_idx == 0) {
         doca_gpu_dev_verbs_mark_wqes_ready<resource_sharing_mode>(
-            qp, base_wqe_idx, base_wqe_idx + DOCA_GPUNETIO_VERBS_WARP_SIZE - 1);
+            qp, base_wqe_idx, base_wqe_idx + blockDim.x - 1);
 
         // mark_wqes_ready has already called fence.release with sufficiently strong scope. No need
         // to call it again in submit.
@@ -148,7 +148,7 @@ __device__ static __forceinline__ void doca_gpu_dev_verbs_put_warp(
                 ? DOCA_GPUNETIO_VERBS_SYNC_SCOPE_THREAD
                 : DOCA_GPUNETIO_VERBS_SYNC_SCOPE_GPU;
         doca_gpu_dev_verbs_submit<resource_sharing_mode, submit_sync_scope, nic_handler>(
-            qp, base_wqe_idx + DOCA_GPUNETIO_VERBS_WARP_SIZE, code_opt);
+            qp, base_wqe_idx + blockDim.x, code_opt);
     }
     __syncwarp();
 

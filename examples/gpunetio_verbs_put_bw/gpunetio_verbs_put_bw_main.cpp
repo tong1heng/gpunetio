@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     verbs_cfg.nic_handler = DOCA_GPUNETIO_VERBS_NIC_HANDLER_AUTO;
     verbs_cfg.exec_scope = DOCA_GPUNETIO_VERBS_EXEC_SCOPE_THREAD;
 
-    while ((option = getopt(argc, argv, "c:d:e:g:i:l:p:")) != -1) {
+    while ((option = getopt(argc, argv, "c:d:e:g:i:l:p:t:")) != -1) {
         switch (option) {
             case 'c': {
                 verbs_cfg.server_ip_addr = optarg;
@@ -91,6 +91,11 @@ int main(int argc, char **argv) {
                     DOCA_LOG(LOG_ERR, "NIC handler BlueFlame not supported in this example");
                     return 1;
                 }
+                break;
+            }
+            case 't': {
+                verbs_cfg.cuda_threads = std::atoi(optarg);
+                std::cout << "CUDA threads set to " << verbs_cfg.cuda_threads << std::endl;
                 break;
             }
             default:
