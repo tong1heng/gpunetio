@@ -70,5 +70,6 @@ gpunetio_verbs_write_lat
 .common.mk
 
 .cache/*
+compile_commands.json
 
 third_party/*
