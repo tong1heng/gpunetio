@@ -111,6 +111,7 @@ LIBOBJS := $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(LIBSRCS))
 LIB_CXXFLAGS := $(CXXFLAGS) -Wall
 
 EXAMPLES_SUBDIRS := examples/gpunetio_verbs_put_bw
+EXAMPLES_SUBDIRS += examples/gpunetio_verbs_put_bw_coro
 EXAMPLES_SUBDIRS += examples/gpunetio_verbs_write_lat
 EXAMPLES_SUBDIRS += examples/gpunetio_verbs_write_bw
 

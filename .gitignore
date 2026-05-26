@@ -59,6 +59,7 @@ install/
 git_commit.txt
 version.txt
 gpunetio_verbs_put_bw
+gpunetio_verbs_put_bw_coro
 gpunetio_verbs_write_bw
 gpunetio_verbs_write_lat
 
