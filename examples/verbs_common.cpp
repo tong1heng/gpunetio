@@ -238,7 +238,7 @@ doca_error_t create_verbs_resources(struct verbs_config *cfg, struct verbs_resou
     union ibv_gid rgid;
     int ret = 0;
     struct ibv_port_attr port_attr;
-    struct doca_gpu_verbs_qp_init_attr_hl qp_init;
+    struct doca_gpu_verbs_qp_init_attr_hl qp_init = {};
     int cuda_id = 0;
     cudaError_t cuda_ret;
 
