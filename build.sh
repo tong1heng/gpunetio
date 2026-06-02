@@ -5,7 +5,7 @@
 /usr/sbin/ofed_uninstall.sh
 ./mlnxofedinstall --without-dkms --add-kernel-support --without-fw-update --force
 /etc/init.d/openibd restart
-
+sudo service opensm restart
 
 # 1. install open-flavor kernel modules
 
@@ -31,7 +31,7 @@ sudo insmod ./nvidia-peermem.ko
 
 
 # 2. install gdrdrv
-cd ./third_party/gdrdrv
+cd ./third_party/gdrcopy
 # export NVIDIA_SRC_DIR=/usr/src/nvidia-580.95.05/nvidia
 export NVIDIA_SRC_DIR=/home/tyh/gpunetio/third_party/open-gpu-kernel-modules/kernel-open/nvidia
 make clean

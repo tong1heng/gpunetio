@@ -45,7 +45,7 @@ volatile bool server_force_quit = false;
  */
 static void server_validate_test(struct verbs_resources *resources) {
     for (int idx = 0; idx < NUM_MSG_SIZE; idx++) {
-        for (int pos = 0; pos < (int)resources->cuda_threads * message_size[idx]; pos++) {
+        for (int pos = 0; pos < (int)resources->cuda_threads * resources->num_coroutines * message_size[idx]; pos++) {
             if (resources->data_buf[idx][pos] != (idx + 1)) {
                 DOCA_LOG(LOG_ERR, "Validation error: buffer %d pos %d has invalid data %d\n", idx,
                          pos, resources->data_buf[idx][pos]);
@@ -101,7 +101,7 @@ static doca_error_t create_local_memory_object(struct verbs_resources *resources
 
     for (int idx = 0; idx < NUM_MSG_SIZE; idx++) {
         resources->data_mr[idx] = NULL;
-        size = (size_t)(resources->cuda_threads * message_size[idx]);
+        size = (size_t)(resources->cuda_threads * resources->num_coroutines * message_size[idx]);
         ALIGN_SIZE(size, host_page_size);
 
         if (resources->cfg->is_server) {
@@ -116,8 +116,8 @@ static doca_error_t create_local_memory_object(struct verbs_resources *resources
                 doca_gpu_mem_alloc(resources->gpu_dev, size, host_page_size, DOCA_GPU_MEM_TYPE_GPU,
                                    (void **)&(resources->data_buf[idx]), NULL);
             if (status != DOCA_SUCCESS) {
-                DOCA_LOG(LOG_ERR, "Failed to allocate GPU memory buffer %d of size = %zd (%d x %d)",
-                         idx, size, message_size[idx], resources->cuda_threads);
+                DOCA_LOG(LOG_ERR, "Failed to allocate GPU memory buffer %d of size = %zd (%d x %d x %d)",
+                         idx, size, message_size[idx], resources->cuda_threads, resources->num_coroutines);
                 goto exit_error;
             }
 
@@ -230,6 +230,7 @@ doca_error_t verbs_server(struct verbs_config *cfg) {
     resources.conn_socket = -1;
     resources.num_iters = cfg->num_iters;
     resources.cuda_threads = cfg->cuda_threads;
+    resources.num_coroutines = cfg->num_coroutines;
     resources.enable_umem_cpu = false;
 
     status = create_verbs_resources(cfg, &resources);
@@ -302,6 +303,7 @@ doca_error_t verbs_client(struct verbs_config *cfg) {
     resources.conn_socket = -1;
     resources.num_iters = cfg->num_iters;
     resources.cuda_threads = cfg->cuda_threads;
+    resources.num_coroutines = cfg->num_coroutines;
     resources.nic_handler = cfg->nic_handler;
     resources.scope = (enum doca_gpu_dev_verbs_exec_scope)cfg->exec_scope;
     resources.enable_umem_cpu = false;
@@ -365,9 +367,9 @@ doca_error_t verbs_client(struct verbs_config *cfg) {
     }
 
     DOCA_LOG(LOG_INFO,
-             "Launching gpunetio_verbs_put_bw kernel with %d CUDA Blocks, %d CUDA threads each, %d "
+             "Launching gpunetio_verbs_put_bw kernel with %d CUDA Blocks, %d CUDA threads each, %d coroutines each, %d "
              "total number of iterations, %d iterations per cuda thread, %d nic handler, %s scope",
-             VERBS_CUDA_BLOCK, resources.cuda_threads / VERBS_CUDA_BLOCK, resources.num_iters,
+             VERBS_CUDA_BLOCK, resources.cuda_threads / VERBS_CUDA_BLOCK, resources.num_coroutines, resources.num_iters,
              resources.num_iters / resources.cuda_threads, resources.nic_handler,
              (resources.scope == DOCA_GPUNETIO_VERBS_EXEC_SCOPE_THREAD) ? "THREAD" : "WARP");
 
@@ -396,9 +398,9 @@ doca_error_t verbs_client(struct verbs_config *cfg) {
 
     for (int idx = 0; idx < NUM_MSG_SIZE; idx++) {
         /* Warmup per size*/
-        status = gpunetio_verbs_put_bw(
+        status = gpunetio_verbs_put_bw_coro(
             cstream, qp_gpu, resources.num_iters, VERBS_CUDA_BLOCK,
-            resources.cuda_threads / VERBS_CUDA_BLOCK, message_size[idx], resources.data_buf[idx],
+            resources.cuda_threads / VERBS_CUDA_BLOCK, resources.num_coroutines, message_size[idx], resources.data_buf[idx],
             htobe32(resources.data_mr[idx]->lkey), (uint8_t *)(resources.remote_data_buf[idx]),
             htobe32(resources.remote_data_mkey[idx]), resources.scope);
         if (status != DOCA_SUCCESS) {
@@ -415,9 +417,9 @@ doca_error_t verbs_client(struct verbs_config *cfg) {
             goto stop_thread;
         }
 
-        status = gpunetio_verbs_put_bw(
+        status = gpunetio_verbs_put_bw_coro(
             cstream, qp_gpu, resources.num_iters, VERBS_CUDA_BLOCK,
-            resources.cuda_threads / VERBS_CUDA_BLOCK, message_size[idx], resources.data_buf[idx],
+            resources.cuda_threads / VERBS_CUDA_BLOCK, resources.num_coroutines, message_size[idx], resources.data_buf[idx],
             htobe32(resources.data_mr[idx]->lkey), (uint8_t *)(resources.remote_data_buf[idx]),
             htobe32(resources.remote_data_mkey[idx]), resources.scope);
         if (status != DOCA_SUCCESS) {

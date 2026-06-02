@@ -3,10 +3,17 @@
 ## Put BW
 
 - client
-	- LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH DOCA_GPUNETIO_LOG=7 ./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g CA:00.0 -d mlx5_0 -c 10.0.2.191 -b 1 -t 1
+	- LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH DOCA_GPUNETIO_LOG=7 ./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g E1:00.0 -d mlx5_0 -c 10.0.2.191 -t 1
 - server
-	- LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH DOCA_GPUNETIO_LOG=7 ./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g CA:00.0 -d mlx5_0
+	- LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH DOCA_GPUNETIO_LOG=7 ./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g E1:00.0 -d mlx5_0 -t 1
 
+
+### coro
+
+- client
+	- LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH DOCA_GPUNETIO_LOG=7 ./examples/gpunetio_verbs_put_bw_coro/gpunetio_verbs_put_bw_coro -g E1:00.0 -d mlx5_0 -c 10.0.2.191 -t 1 -u 2
+- server
+	- LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH DOCA_GPUNETIO_LOG=7 ./examples/gpunetio_verbs_put_bw_coro/gpunetio_verbs_put_bw_coro -g E1:00.0 -d mlx5_0 -t 1 -u 2
 
 ## write latency
 

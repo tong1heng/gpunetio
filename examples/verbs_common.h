@@ -89,6 +89,7 @@ struct verbs_config {
     std::string server_ip_addr;  /* DOCA device name */
     uint32_t num_iters;          /* total number orations per cuda kernel */
     uint32_t cuda_threads;       /* cuda threads per cuda block */
+    uint32_t num_coroutines;     /* number of coroutines to run in parallel */
     enum doca_gpu_dev_verbs_nic_handler nic_handler;
     uint8_t exec_scope;
     enum doca_gpu_verbs_send_dbr_mode_ext
@@ -121,6 +122,7 @@ struct verbs_resources {
     int dlid;                                /* IB: destination ID */
     uint32_t num_iters;                      /* total number of iterations per cuda kernel */
     uint32_t cuda_threads;                   /* threads */
+    uint32_t num_coroutines;                 /* number of coroutines to run in parallel */
     enum doca_gpu_dev_verbs_nic_handler nic_handler; /* enable CPU proxy */
     enum doca_gpu_dev_verbs_exec_scope scope;
     uint8_t cq_collapsed; /* enable/disable cq collapsed */
@@ -324,6 +326,11 @@ doca_error_t gpunetio_verbs_put_bw(cudaStream_t stream, struct doca_gpu_dev_verb
                                    uint8_t *dst_buf, uint32_t dst_buf_mkey,
                                    enum doca_gpu_dev_verbs_exec_scope scope);
 
+doca_error_t gpunetio_verbs_put_bw_coro(cudaStream_t stream, struct doca_gpu_dev_verbs_qp *qp,
+                                   uint32_t num_iters, uint32_t cuda_blocks, uint32_t cuda_threads, uint32_t num_coroutines,
+                                   uint32_t data_size, uint8_t *src_buf, uint32_t src_buf_mkey,
+                                   uint8_t *dst_buf, uint32_t dst_buf_mkey,
+                                   enum doca_gpu_dev_verbs_exec_scope scope);
 #if __cplusplus
 }
 #endif
