@@ -244,7 +244,7 @@ doca_error_t create_verbs_resources(struct verbs_config *cfg, struct verbs_resou
 
     resources->cfg = cfg;
 
-    cudaFree(0);
+    // cudaFree(0);
 
     /* In a multi-GPU system, ensure CUDA refers to the right GPU device */
     cuda_ret = cudaDeviceGetByPCIBusId(&cuda_id, cfg->gpu_pcie_addr.c_str());

@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+gpu="E1:00.0"
+nic="mlx5_0"
+ip="10.0.2.191"
+
 scope=1 # 0 for thread, 1 for warp
 threads=(1 2 4 8 16 32)
 
@@ -32,8 +36,8 @@ for t in "${threads[@]}"; do
     echo "Running test with threads=${t}, scope=${scope}"
     echo "========================================"
 
-    SERVER_CMD="./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g E1:00.0 -d mlx5_0 -t ${t}"
-    CLIENT_CMD="./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g E1:00.0 -d mlx5_0 -c 10.0.2.191 -e ${scope} -t ${t}"
+    SERVER_CMD="./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g ${gpu} -d ${nic} -t ${t}"
+    CLIENT_CMD="./examples/gpunetio_verbs_put_bw/gpunetio_verbs_put_bw -g ${gpu} -d ${nic} -c ${ip} -e ${scope} -t ${t}"
 
     CLIENT_LOG="${dir}/1b${t}t.log"
 
