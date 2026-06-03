@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
 
-scope=1 # 0 for thread, 1 for warp
+scope=0 # 0 for thread, 1 for warp
 threads=(1 2 4 8 16 32)
 coro=2
 
 if [ "$scope" -eq 0 ]; then
-    dir="./test1/put_bw/coro${coro}/thread"
+    dir="./test1/put_bw_coro${coro}/thread"
 else
-    dir="./test1/put_bw/coro${coro}/warp"
+    dir="./test1/put_bw_coro${coro}/warp"
 fi
 
 mkdir -p "$dir"
